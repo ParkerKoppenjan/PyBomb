@@ -8,8 +8,10 @@ PyBomb is a syllable-based word game designed for fast-paced, turn-based multipl
 ## How to Play  
 1. **Install Dependencies**  
    Ensure you have Python installed. Install the required libraries by running:  
-   ```bash  
-   pip install pygame english-words randomdict tweener 
+   ```bash  ![Uploading arrow.png…]()
+
+   pip install pygame english-words tweener
+   pip install git+https://github.com/robtandy/randomdict.git
    ```  
 
 2. **Launch the Game**  
