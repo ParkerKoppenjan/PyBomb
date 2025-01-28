@@ -1,18 +1,8 @@
-from english_words import get_english_words_set
 import pygame
 from enums import MenuAction
 import math
 import syllables as syl
 from tweener import *
-import time
-
-'''
-TO DO:
-Game Over Screen
-Sound effects
-Multiplayer AHHHH
-
-'''
 
 class GameState:
     def __init__(self, player_count, screen=pygame.display.set_mode((1280, 720))):
