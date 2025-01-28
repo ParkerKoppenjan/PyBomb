@@ -4,6 +4,15 @@ from enums import MenuAction
 import math
 import syllables as syl
 from tweener import *
+import time
+
+'''
+TO DO:
+Game Over Screen
+Sound effects
+Multiplayer AHHHH
+
+'''
 
 class GameState:
     def __init__(self, player_count, screen=pygame.display.set_mode((1280, 720))):
@@ -15,7 +24,7 @@ class GameState:
             new_player = Player(name)
             self.players.append(new_player)
 
-        self.valid_words = get_english_words_set(sources=['web2'], lower=True, alpha=True) # preload valid English words
+        self.valid_words = self.load_scowl(self,"assets/scowl-orig.txt", 80)
         self.used_words = set()
         self.current_player_index = 0
         self.current_player = self.players[self.current_player_index]
@@ -23,9 +32,9 @@ class GameState:
         self.current_syl = self.current_diff.random_key() # get initial random syllable
         self.input_buffer = "" # player input while its being typed
         self.clock = pygame.time.Clock()
-        self.running = True
         self.dt = 0
-        self.turn_time = 20 # initial turn duration
+        self.running = True
+        self.turn_time = 10 # initial turn duration
         self.current_turn_time = self.turn_time
         self.turn_count = 0
         self.winner = None
@@ -80,11 +89,11 @@ class GameState:
         # increase difficulty as game progresses
         if self.turn_count // len(self.players) == 6 and self.turn_time != 15:
             self.current_diff = syl.medium_syllables
-            self.turn_time = 15
+            self.turn_time = 8
             self.current_turn_time = self.turn_time
         elif self.turn_count // len(self.players) == 12 and self.turn_time != 10:
             self.current_diff = syl.hard_syllables
-            self.turn_time = 10
+            self.turn_time = 5
             self.current_turn_time = self.turn_time
 
     def render(self):
@@ -164,12 +173,25 @@ class GameState:
         if success:
             self.current_syl = self.current_diff.random_key() # get new syllable on successful word
 
+    # dark magic to load scowl file
+    @staticmethod
+    def load_scowl(self, path, max_level):
+        words = set()
+        with open(path, "r", encoding="utf-8") as file:
+            for line in file:
+                parts = line.split(":")
+                if parts and parts[0].isdigit():
+                    level = int(parts[0])
+                    if level <= max_level:
+                        word_with_metadata = parts[1].split("#")[0].strip()
+                        plain_word = word_with_metadata.split()[0]
+                        words.add(plain_word.lower())
+        return words
 
 class Player:
     def __init__(self, name = "player"):
         self.name = name
         self.lives = 2 # each player starts with 2 lives
-
 
 class Menu:
     def __init__(self, screen=pygame.display.set_mode((1280, 720))):
@@ -246,6 +268,10 @@ class Menu:
                         self.input_buffer = self.input_buffer[:-1] # remove last character
                     elif event.unicode.isdigit() and len(self.input_buffer) < 1:
                        self.input_buffer += event.unicode
+
+class GameOverScreen:
+    def __init__(self, screen=pygame.display.set_mode((1280, 720))):
+        pass
 
 class Button:
     def __init__(self, x, y, width, height, text, color, hover_color = None):

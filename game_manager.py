@@ -1,5 +1,5 @@
 import pygame
-from game import GameState, Menu
+from game import GameState, Menu, GameOverScreen
 from enum import Enum
 from enums import MenuAction
 
@@ -16,6 +16,7 @@ class GameManager:
         self.current_screen = GameScreen.MAIN_MENU
         self.game_state = None
         self.menu = None
+        self.game_over = None
         self.running = True
         self.player_count = 4 # defaults to 4
 
@@ -45,8 +46,10 @@ class GameManager:
             if action[0] == MenuAction.START_LOCAL:
                 self.player_count = action[1]
                 self.current_screen = GameScreen.GAME
-        elif action == MenuAction.START_MULTI:
-            pass
+            elif action == MenuAction.START_MULTI:
+                pass
+            elif action == MenuAction.JOIN_MULTI:
+                pass
 
 
     def handle_game(self, player_count):
@@ -65,7 +68,9 @@ class GameManager:
 
 
     def handle_game_over(self):
-        pass
+        if self.game_over is None:
+            self.game_over = GameOverScreen
+
 
 def main():
     manager = GameManager()
