@@ -18,7 +18,9 @@ class GameManager:
         self.menu = None
         self.game_over = None
         self.running = True
-        self.player_count = 4 # defaults to 4
+        self.player_count = None
+        self.winner = None
+
 
     def run(self):
         while self.running:
@@ -28,6 +30,7 @@ class GameManager:
                 self.handle_game(self.player_count)
             elif self.current_screen == GameScreen.GAME_OVER:
                 self.handle_game_over()
+
         pygame.quit()
 
 
@@ -52,7 +55,10 @@ class GameManager:
                 pass
 
 
-    def handle_game(self, player_count):
+    def handle_game(self, player_count=None):
+        if player_count is None:
+            player_count = self.player_count
+        self.player_count = player_count
         if self.game_state is None:
             self.game_state = GameState(player_count, self.screen)
 
@@ -60,16 +66,35 @@ class GameManager:
 
         if action == MenuAction.QUIT:
             self.running = False
-            pygame.quit()
             return
 
-        if self.game_state.winner is not None:
+        elif action == MenuAction.TO_GAME_OVER:
+            self.winner = self.game_state.winner
             self.current_screen = GameScreen.GAME_OVER
+            self.game_state = None
+            return
 
 
     def handle_game_over(self):
         if self.game_over is None:
-            self.game_over = GameOverScreen
+            self.game_over = GameOverScreen(self.screen, self.winner)
+
+        action = self.game_over.run()
+
+        if action == MenuAction.QUIT:
+            self.running = False
+            pygame.quit()
+            return
+        elif action == MenuAction.START_LOCAL:
+            self.current_screen = GameScreen.GAME
+            self.game_state = None
+            self.game_over = None
+        elif action == MenuAction.TO_MENU:
+            self.current_screen = GameScreen.MAIN_MENU
+            self.menu = None
+            self.game_over = None
+
+
 
 
 def main():

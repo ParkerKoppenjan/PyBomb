@@ -4,6 +4,8 @@ import math
 import syllables as syl
 from tweener import *
 
+
+
 class GameState:
     def __init__(self, player_count, screen=pygame.display.set_mode((1280, 720))):
         pygame.init() # THIS IS ONLY FOR TESTING. GAME_MANAGER WILL HANDLE INIT
@@ -29,6 +31,7 @@ class GameState:
         self.turn_count = 0
         self.winner = None
 
+
         self.screen = screen
         self.background = pygame.Surface(self.screen.get_size())
         self.background.fill((74, 64, 57))  # gray background color
@@ -45,7 +48,11 @@ class GameState:
             self.handle_events()
             self.logic()
             self.render()
+
+        if not self.running:
+            return MenuAction.TO_GAME_OVER
         return MenuAction.QUIT
+
 
     def handle_events(self):
         """Handles local player actions; keyboard inputs and quitting"""
@@ -63,25 +70,27 @@ class GameState:
 
     def logic(self):
         self.current_turn_time -= self.dt
+
+
         if self.current_turn_time <= 0:
-            self.current_player.lives -= 1 # player loses a life for timing out
-            self.next_turn(False)
+            self.current_player.lives -= 1 # lose a life for time out
 
-        if self.current_player.lives <= 0:
-            self.players.pop(self.current_player_index) # remove player with no lives
+            self.players = [p for p in self.players if p.lives > 0] # remove dead players
 
+            # check win condition after player dies
             if len(self.players) == 1:
                 self.winner = self.players[0]
                 self.running = False
                 return
 
+            self.next_turn(False)
 
         # increase difficulty as game progresses
-        if self.turn_count // len(self.players) == 6 and self.turn_time != 15:
+        if self.turn_count // len(self.players) == 6 and self.turn_time != 10:
             self.current_diff = syl.medium_syllables
             self.turn_time = 8
             self.current_turn_time = self.turn_time
-        elif self.turn_count // len(self.players) == 12 and self.turn_time != 10:
+        elif self.turn_count // len(self.players) == 12 and self.turn_time != 8:
             self.current_diff = syl.hard_syllables
             self.turn_time = 5
             self.current_turn_time = self.turn_time
@@ -99,38 +108,36 @@ class GameState:
         # calculate text position to center it on the bomb
         bomb_center_x = 565 + self.image.get_width() // 2
         bomb_center_y = 16 + 285 + self.image.get_height() // 2 # 16 is an eyeball adjustment for the bomb text
-        text_width, text_height = font.size(self.current_syl)
-        text_x_pos = bomb_center_x - text_width // 2
-        text_y_pos = (bomb_center_y - text_height // 2)
 
-        self.screen.blit(font.render(self.current_syl, True, (255, 255, 255)), (text_x_pos, text_y_pos))
+        if self.running:
+            text_width, text_height = font.size(self.current_syl)
+            text_x_pos = bomb_center_x - text_width // 2
+            text_y_pos = (bomb_center_y - text_height // 2)
 
-        self.screen.blit(font.render(f"Time Left: {int(self.current_turn_time)}", True, (255, 255, 255)), (50, 100))
-        self.screen.blit(font.render(f"Input: {self.input_buffer}", True, (255, 255, 255)), (50, 150))
+            self.screen.blit(font.render(self.current_syl, True, (255, 255, 255)), (text_x_pos, text_y_pos))
+            self.screen.blit(font.render(f"Time Left: {int(self.current_turn_time)}", True, (255, 255, 255)), (50, 100))
+            self.screen.blit(font.render(f"Input: {self.input_buffer}", True, (255, 255, 255)), (50, 150))
 
-        active_players = [p for p in self.players if p.lives > 0] # removes 0 life players from visual rendering
+        if self.players:
+            player_angles = {} # dict to store the angle at which player names are from the center, for arrow pointing
+            for i, player in enumerate(self.players):
+                # calculate player's position on a circle around the bomb
+                angle = (2 * math.pi * i) / len(self.players)
+                player_angles[player] = angle
+                player_x = bomb_center_x + 200 * math.cos(angle)
+                player_y = bomb_center_y - 200 * math.sin(angle)
 
-        player_angles = {} # dict to store the angle at which player names are from the center, for arrow pointing
-        for i, player in enumerate(active_players):
-            # calculate player's position on a circle around the bomb
-            angle = (2 * math.pi * i) / len(active_players)
-            player_angles[player] = angle
-            player_x = bomb_center_x + 200 * math.cos(angle)
-            player_y = bomb_center_y - 200 * math.sin(angle)
+                # render player name and lives
+                text_surface = font.render(f"{player.name}: {player.lives}", True, (255, 255, 255))
+                text_width, text_height = text_surface.get_size()
 
-            # render player name and lives
-            text_surface = font.render(f"{player.name}: {player.lives}", True, (255, 255, 255))
-            text_width, text_height = text_surface.get_size()
+                # adjust text positioning to look less wonky
+                text_x = player_x - text_width / 2
+                text_y = player_y - text_height / 2
 
-            # adjust text positioning to look less wonky
-            text_x = player_x - text_width / 2
-            text_y = player_y - text_height / 2
-
-            self.screen.blit(text_surface, (text_x, text_y))
-
-        if player_angles[self.current_player] != self.arrow.start_angle:
-            self.arrow.rotate(player_angles[self.current_player], 20)
-
+                self.screen.blit(text_surface, (text_x, text_y))
+                if self.current_player in player_angles and player_angles[self.current_player] != self.arrow.start_angle:
+                    self.arrow.rotate(player_angles[self.current_player], 20)
 
         pygame.display.flip()  # updates the display
 
@@ -158,10 +165,11 @@ class GameState:
         self.current_turn_time = self.turn_time
         self.input_buffer = ""
         # cycle to next player, wrapping around the list
-        self.current_player_index = (self.current_player_index + 1) % len(self.players)
-        self.current_player = self.players[self.current_player_index]
-        if success:
-            self.current_syl = self.current_diff.random_key() # get new syllable on successful word
+        if len(self.players) > 1:
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+            self.current_player = self.players[self.current_player_index]
+            if success:
+                self.current_syl = self.current_diff.random_key() # get new syllable on successful word
 
     # dark magic to load scowl file
     @staticmethod
@@ -207,10 +215,6 @@ class Menu:
 
             self.render()
 
-            # update button hover state
-            for button in self.buttons.values():
-                button.is_hovered = button.is_mouse_over(self.MOUSE_POS)
-
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -235,6 +239,9 @@ class Menu:
 
         for button in self.buttons.values():
             button.draw(self.screen)
+            button.is_hovered = button.is_mouse_over(self.MOUSE_POS) # update hover state
+
+
         pygame.display.flip()
 
     def input_render(self):
@@ -260,8 +267,57 @@ class Menu:
                        self.input_buffer += event.unicode
 
 class GameOverScreen:
-    def __init__(self, screen=pygame.display.set_mode((1280, 720))):
-        pass
+    def __init__(self, screen, winner=None):
+        self.running = True
+        self.MOUSE_POS = None
+        self.screen = screen
+        self.background = pygame.Surface(self.screen.get_size())
+        self.background.fill((74, 64, 57))
+        self.winner = winner
+
+        self.buttons = {
+            'play-again': Button(440, 335, 400, 50, "PLAY AGAIN?", (59, 89, 182), (32, 49, 102)),
+            'menu': Button(440, 415, 400, 50, "MAIN MENU", (59, 89, 182), (32, 49, 102)),
+        }
+
+    def run(self):
+        while self.running:
+            self.MOUSE_POS = pygame.mouse.get_pos()
+            action = self.handle_events()
+            if action is not None:
+                return action
+            self.render()
+
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                return MenuAction.QUIT
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.buttons['play-again'].handle_click(self.MOUSE_POS):
+                    return MenuAction.START_LOCAL # this logic will need to be altered when multiplayer
+                elif self.buttons['menu'].handle_click(self.MOUSE_POS):
+                    return MenuAction.TO_MENU
+
+
+
+    def render(self):
+        self.screen.blit(self.background, (0, 0))
+        font = pygame.font.Font("assets/Retro.ttf", 80)
+        self.screen.blit(font.render("GAME OVER", True, (255, 255, 255)), (280, 100))
+
+        if self.winner:
+            winner_font = pygame.font.Font("assets/Retro.ttf", 36)
+            winner_text = winner_font.render(f"Winner: {self.winner.name}", True, (255, 255, 255))
+            text_width = winner_text.get_width()
+            self.screen.blit(winner_text, (640 - text_width / 2, 200))
+
+        for button in self.buttons.values():
+            button.draw(self.screen)
+            button.is_hovered = button.is_mouse_over(self.MOUSE_POS) # update hover state
+
+        pygame.display.flip()
 
 class Button:
     def __init__(self, x, y, width, height, text, color, hover_color = None):
@@ -365,9 +421,9 @@ class Arrow:
 
 # tester, to be removed
 def main():
-    game = GameState(3)
-    game.run()
-    pygame.quit()
+   game = GameState(3)
+   game.run()
+   pygame.quit()
 
 if __name__ == "__main__":
     main()
