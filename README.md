@@ -10,7 +10,7 @@ PyBomb is a syllable-based word game designed for fast-paced, turn-based multipl
    Ensure you have Python installed. Install the required libraries by running:  
    ```bash  ![Uploading arrow.png…]()
 
-   pip install pygame english-words tweener
+   pip install pygame tweener
    pip install git+https://github.com/robtandy/randomdict.git
    ```  
 
