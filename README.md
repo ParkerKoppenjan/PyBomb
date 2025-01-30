@@ -1,6 +1,6 @@
-
 # PyBomb  
 *A Python implementation of JKLM Bombparty, built with Pygame. A work in progress.*
+![Screenshot 2025-01-29 173759](https://github.com/user-attachments/assets/f11bd167-24f0-417a-9543-c2b8affbd392)
 
 ## Description  
 PyBomb is a syllable-based word game designed for fast-paced, turn-based multiplayer gameplay.  
