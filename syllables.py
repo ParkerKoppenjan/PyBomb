@@ -1,4 +1,4 @@
-from randomdict import RandomDict # totally overkill, but was interested in testing out this library
+from randomdict import RandomDict # totally overkill, but was interested in testing out this module
 
 easy_syllables = RandomDict()
 for syllable in {
