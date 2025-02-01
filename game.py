@@ -9,7 +9,6 @@ from PIL import Image
 
 class GameState:
     def __init__(self, player_count, screen=pygame.display.set_mode((1280, 720))):
-        pygame.init() # THIS IS ONLY FOR TESTING. GAME_MANAGER WILL HANDLE INIT
         # creates list of players
         self.players = []
         for i in range(player_count):
@@ -34,8 +33,7 @@ class GameState:
 
 
         self.screen = screen
-        self.background = pygame.Surface(self.screen.get_size())
-        self.background.fill((74, 64, 57))  # gray background color
+        self.background = pygame.image.load("assets/background.png")
         self.arrow = Arrow(self.screen, 640, 376)
 
         # images, with pillow because pygame image loading sucks
@@ -91,8 +89,8 @@ class GameState:
         self.tick_sound_hard = pygame.mixer.Sound('assets/tick_toc_4x.wav')
         self.tick_channel = pygame.mixer.Channel(0)
         self.current_tick_sound = self.tick_sound_easy
-        
 
+        self.explosion_sound = pygame.mixer.Sound('assets/explosion.mp3')
 
     def run(self):
         while self.running:
@@ -103,6 +101,7 @@ class GameState:
             self.render()
 
         self.tick_channel.stop()
+        self.explosion_sound.play()
 
         if not self.running and self.winner:
             return MenuAction.TO_GAME_OVER
@@ -476,30 +475,3 @@ class Arrow:
             self.rotation_tween.update()
             self.angle = self.rotation_tween.value
         self.start_angle = self.angle
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# tester, to be removed
-def main():
-   game = GameState(3)
-   game.run()
-   pygame.quit()
-
-if __name__ == "__main__":
-    main()
