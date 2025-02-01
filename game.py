@@ -3,6 +3,7 @@ from enums import MenuAction
 import math
 import syllables as syl
 from tweener import *
+from PIL import Image
 
 
 
@@ -37,19 +38,73 @@ class GameState:
         self.background.fill((74, 64, 57))  # gray background color
         self.arrow = Arrow(self.screen, 640, 376)
 
-        # images
-        self.image = pygame.image.load("assets/bomb.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (150, 150))
+        # images, with pillow because pygame image loading sucks
+        self.image = Image.open("assets/bomb.png")
+        self.image = self.image.resize((150, 150), Image.Resampling.LANCZOS)
+        self.image = pygame.image.fromstring(self.image.tobytes(), self.image.size, "RGBA")
+        self.original_width, self.original_height = self.image.get_size()
+
+        self.screen_rect = self.screen.get_rect()
+        image_rect = self.image.get_rect()
+        self.bomb_x = (self.screen_rect.width - image_rect.width) / 2
+        self.bomb_y = (self.screen_rect.height - image_rect.height) / 2
+
+        # animations
+        self.bomb_size_easy = Tween(
+            begin=150,
+            end=170,
+            duration=500,
+            easing=Easing.EXPO,
+            easing_mode=EasingMode.IN_OUT,
+            boomerang=True,
+            loop=True
+        )
+        self.bomb_size_easy.start()
+
+        self.bomb_size_medium = Tween(
+            begin=150,
+            end=170,
+            duration=250,
+            easing=Easing.EXPO,
+            easing_mode=EasingMode.IN_OUT,
+            boomerang=True,
+            loop=True
+        )
+        self.bomb_size_medium.start()
+
+        self.bomb_size_hard = Tween(
+            begin=150,
+            end=170,
+            duration=125,
+            easing=Easing.EXPO,
+            easing_mode=EasingMode.IN_OUT,
+            boomerang=True,
+            loop=True
+        )
+        self.bomb_size_hard.start()
+
+        self.current_bomb_anim = self.bomb_size_easy
+
+        # sound effects
+        self.tick_sound_easy = pygame.mixer.Sound('assets/tick_toc.wav')
+        self.tick_sound_medium = pygame.mixer.Sound('assets/tick_toc_2x.wav')
+        self.tick_sound_hard = pygame.mixer.Sound('assets/tick_toc_4x.wav')
+        self.tick_channel = pygame.mixer.Channel(0)
+        self.current_tick_sound = self.tick_sound_easy
+        
 
 
     def run(self):
         while self.running:
             self.dt = self.clock.tick(60) / 1000  # calculates delta time, elapsed time between each frame
+            self.figure_out_frontend()
             self.handle_events()
             self.logic()
             self.render()
 
-        if not self.running:
+        self.tick_channel.stop()
+
+        if not self.running and self.winner:
             return MenuAction.TO_GAME_OVER
         return MenuAction.QUIT
 
@@ -70,7 +125,8 @@ class GameState:
 
     def logic(self):
         self.current_turn_time -= self.dt
-
+        if not self.tick_channel.get_busy():
+            self.tick_channel.play(self.current_tick_sound)
 
         if self.current_turn_time <= 0:
             self.current_player.lives -= 1 # lose a life for time out
@@ -86,28 +142,44 @@ class GameState:
             self.next_turn(False)
 
         # increase difficulty as game progresses
-        if self.turn_count // len(self.players) == 6 and self.turn_time != 10:
+        if self.turn_count >= 6 * len(self.players) and self.current_diff == syl.easy_syllables:
             self.current_diff = syl.medium_syllables
             self.turn_time = 8
             self.current_turn_time = self.turn_time
-        elif self.turn_count // len(self.players) == 12 and self.turn_time != 8:
+        elif self.turn_count >= 12 * len(self.players) and self.current_diff == syl.medium_syllables:
             self.current_diff = syl.hard_syllables
             self.turn_time = 5
             self.current_turn_time = self.turn_time
+
+    def figure_out_frontend(self):
+        # determine current tick sound and animation
+        if self.current_diff is syl.medium_syllables:
+            self.current_tick_sound = self.tick_sound_medium
+            self.current_bomb_anim = self.bomb_size_medium
+        elif self.current_diff is syl.hard_syllables:
+            self.current_tick_sound = self.tick_sound_hard
+            self.current_bomb_anim = self.bomb_size_hard
+
 
     def render(self):
         """Draws everything to the screen."""
         self.screen.blit(self.background, (0, 0))  # draw the background
         self.arrow.update()
         self.arrow.render()
-        self.screen.blit(self.image, (565, 285))  # draw the bomb at its center
 
+        self.current_bomb_anim.update()
+        new_size = (int(self.current_bomb_anim.value), int(self.current_bomb_anim.value)) # gets new dimensions from tween as ints
+        scaled_image = pygame.transform.smoothscale(self.image, new_size)
+        image_rect = scaled_image.get_rect()
+        self.screen.blit(scaled_image,
+                         ((self.screen_rect.width - image_rect.width) / 2, (self.screen_rect.height - image_rect.height) / 2)) # keeps the bomb centered
 
+        # draw bomb text
         font = pygame.font.Font("assets/Poppins.ttf", 26)
 
         # calculate text position to center it on the bomb
-        bomb_center_x = 565 + self.image.get_width() // 2
-        bomb_center_y = 16 + 285 + self.image.get_height() // 2 # 16 is an eyeball adjustment for the bomb text
+        bomb_center_x = 565 + self.original_width // 2
+        bomb_center_y = 16 + 285 + self.original_height // 2 # 16 is an eyeball adjustment for the bomb text
 
         if self.running:
             text_width, text_height = font.size(self.current_syl)
@@ -358,12 +430,16 @@ class Button:
 class Arrow:
     def __init__(self, screen, x_pos, y_pos, start_angle=0):
         self.screen = screen
-        self.image = pygame.image.load("assets/arrow.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (self.image.get_size()[0] / 1.2 , self.image.get_size()[1] / 2))
+
+        self.image = Image.open("assets/arrow.png")
+        self.image = self.image.resize((249, 68), Image.Resampling.BILINEAR)
+        self.image = pygame.image.fromstring(self.image.tobytes(), self.image.size, "RGBA")
         self.arrow_rect = self.image.get_rect(center=(x_pos, y_pos))
         self.start_angle = start_angle
         self.angle = start_angle
         self.rotation_tween = None
+
+
 
     def render(self):
         rotated_image = pygame.transform.rotate(self.image, self.angle)
