@@ -3,8 +3,7 @@ from enums import MenuAction
 import math
 import syllables as syl
 from tweener import *
-from PIL import Image
-
+from PIL import Image, ImageDraw
 
 
 class GameState:
@@ -16,7 +15,7 @@ class GameState:
             new_player = Player(name)
             self.players.append(new_player)
 
-        self.valid_words = self.load_scowl(self,"assets/scowl-orig.txt", 80)
+        self.valid_words = self.load_words(self, "assets/words.txt")
         self.used_words = set()
         self.current_player_index = 0
         self.current_player = self.players[self.current_player_index]
@@ -47,11 +46,12 @@ class GameState:
         self.bomb_x = (self.screen_rect.width - image_rect.width) / 2
         self.bomb_y = (self.screen_rect.height - image_rect.height) / 2
 
-        # animations
+
+
         self.bomb_size_easy = Tween(
             begin=150,
             end=170,
-            duration=500,
+            duration=480,
             easing=Easing.EXPO,
             easing_mode=EasingMode.IN_OUT,
             boomerang=True,
@@ -62,7 +62,7 @@ class GameState:
         self.bomb_size_medium = Tween(
             begin=150,
             end=170,
-            duration=250,
+            duration=240,
             easing=Easing.EXPO,
             easing_mode=EasingMode.IN_OUT,
             boomerang=True,
@@ -73,7 +73,7 @@ class GameState:
         self.bomb_size_hard = Tween(
             begin=150,
             end=170,
-            duration=125,
+            duration=120,
             easing=Easing.EXPO,
             easing_mode=EasingMode.IN_OUT,
             boomerang=True,
@@ -155,6 +155,7 @@ class GameState:
         if self.current_diff is syl.medium_syllables:
             self.current_tick_sound = self.tick_sound_medium
             self.current_bomb_anim = self.bomb_size_medium
+
         elif self.current_diff is syl.hard_syllables:
             self.current_tick_sound = self.tick_sound_hard
             self.current_bomb_anim = self.bomb_size_hard
@@ -163,6 +164,16 @@ class GameState:
     def render(self):
         """Draws everything to the screen."""
         self.screen.blit(self.background, (0, 0))  # draw the background
+
+        # create an arc/pieslice with pillow, scale down with lanczos, convert to pygame image, equates to visual time circle
+        time_degrees = 360 * (self.current_turn_time / self.turn_time)
+        arc = Image.new("RGBA", (500, 500), (0, 0, 0, 0))
+        ImageDraw.Draw(arc).pieslice((0, 0, 499, 499), start=0, end=time_degrees, fill=(23, 15, 12, 255))
+        arc = arc.resize((135, 135), Image.Resampling.LANCZOS)
+        arc = pygame.image.fromstring(arc.tobytes(), arc.size, "RGBA")
+        self.screen.blit(arc, arc.get_rect(center=(self.screen.get_rect().centerx, self.screen.get_rect().centery + 19)))
+
+
         self.arrow.update()
         self.arrow.render()
 
@@ -180,14 +191,13 @@ class GameState:
         bomb_center_x = 565 + self.original_width // 2
         bomb_center_y = 16 + 285 + self.original_height // 2 # 16 is an eyeball adjustment for the bomb text
 
-        if self.running:
-            text_width, text_height = font.size(self.current_syl)
-            text_x_pos = bomb_center_x - text_width // 2
-            text_y_pos = (bomb_center_y - text_height // 2)
 
-            self.screen.blit(font.render(self.current_syl, True, (255, 255, 255)), (text_x_pos, text_y_pos))
-            self.screen.blit(font.render(f"Time Left: {int(self.current_turn_time)}", True, (255, 255, 255)), (50, 100))
-            self.screen.blit(font.render(f"Input: {self.input_buffer}", True, (255, 255, 255)), (50, 150))
+        text_width, text_height = font.size(self.current_syl)
+        text_x_pos = bomb_center_x - text_width // 2
+        text_y_pos = (bomb_center_y - text_height // 2)
+
+        self.screen.blit(font.render(self.current_syl, True, (255, 255, 255)), (text_x_pos, text_y_pos))
+        self.screen.blit(font.render(f"Input: {self.input_buffer}", True, (255, 255, 255)), (50, 150))
 
         if self.players:
             player_angles = {} # dict to store the angle at which player names are from the center, for arrow pointing
@@ -242,19 +252,13 @@ class GameState:
             if success:
                 self.current_syl = self.current_diff.random_key() # get new syllable on successful word
 
-    # dark magic to load scowl file
     @staticmethod
-    def load_scowl(self, path, max_level):
+    def load_words(self, path):
         words = set()
         with open(path, "r", encoding="utf-8") as file:
             for line in file:
-                parts = line.split(":")
-                if parts and parts[0].isdigit():
-                    level = int(parts[0])
-                    if level <= max_level:
-                        word_with_metadata = parts[1].split("#")[0].strip()
-                        plain_word = word_with_metadata.split()[0]
-                        words.add(plain_word.lower())
+                words.add(line.strip().lower())
+
         return words
 
 class Player:

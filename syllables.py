@@ -1,4 +1,4 @@
-from randomdict import RandomDict # totally overkill, but was interested in testing out this module
+from randomdict import RandomDict
 
 easy_syllables = RandomDict()
 for syllable in {
@@ -14,7 +14,15 @@ for syllable in {
     "re", "un", "up",
     "lo", "ja", "zi", "nu", "fe",
     "ki", "ho", "mo", "za", "la",
-    "vi", "wa", "ne", "yo", "ha"
+    "vi", "wa", "ne", "yo", "ha",
+    "ca", "ce", "ci", "co", "cu",
+    "na", "ni", "no", "nu",
+    "ya", "ye", "yi", "yo",
+    "al", "an", "en", "in", "on",
+    "ex", "im", "es", "et",
+    "by", "my", "ty", "ry",
+    "fo", "go", "hi", "jo",
+    "que", "qui", "ka", "ke"
 }:
     easy_syllables[syllable] = None
 
@@ -24,7 +32,7 @@ for syllable in {
     "ga", "ge", "gi", "go", "gu",
     "ha", "he", "hi", "ho", "hu",
     "ja", "je", "ji", "jo", "ju",
-    "ka", "ke", "ki", "ko", "ku",
+    "ka", "ke", "ki", "ko",
     "la", "le", "li", "lo", "lu",
     "na", "ne", "ni", "no", "nu",
     "va", "ve", "vi", "vo", "vu",
@@ -43,7 +51,17 @@ for syllable in {
     "dra", "dro", "gru", "swa", "swe",
     "fra", "flo", "sta", "sle", "spi",
     "blo", "cla", "gle", "phy", "sci",
-    "tha", "tho", "qua", "qui", "sha"
+    "tha", "tho", "qua", "qui", "sha",
+    "pro", "pre", "pri",
+    "spr", "str", "scr",
+    "thr", "sch", "shr",
+    "able", "ible", "ance",
+    "ence", "ling", "tion",
+    "kno", "psy", "rhy",
+    "syn", "sym", "sys",
+    "theo", "tech", "tele",
+    "para", "meta", "anti",
+    "fore", "back", "down"
 }:
     medium_syllables[syllable] = None
 
@@ -69,6 +87,16 @@ for syllable in {
     "mega", "nano", "penta", "hexa", "octo",
     "micro", "macro", "circum", "contra", "ambi",
     "hypo", "hyper", "peri", "mono", "poly",
-    "phyll", "zym", "thel", "glyph", "lith"
+    "phyll", "zym", "thel", "glyph", "lith",
+    "phys", "psych", "pneum",
+    "mnem", "xeno", "pseudo",
+    "cipher", "sphinx", "rhythm",
+    "lymph", "crypt", "synch",
+    "quantum", "quark", "quorum",
+    "phthis", "schwa", "thresh",
+    "archae", "aether", "aegis",
+    "gnosis", "pteryx", "sphinx",
+    "chloro", "chryso", "pharma",
+    "psycho", "physio", "rhetor"
 }:
     hard_syllables[syllable] = None
