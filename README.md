@@ -1,6 +1,7 @@
 # PyBomb  
 *A Python implementation of JKLM Bombparty, built with Pygame. A work in progress.*
-![Screenshot 2025-02-01 092726](https://github.com/user-attachments/assets/331b1441-6e17-4a73-ae3d-4a7ca7ef0401)
+![screenshot 2-2-2025](https://github.com/user-attachments/assets/f62c02e8-faee-4f87-8bdd-31009ed3b93a)
+
 
 
 ## Description  
@@ -11,7 +12,9 @@ PyBomb is a syllable-based word game designed for fast-paced, turn-based multipl
    Ensure you have Python installed. Install the required libraries by running:  
    ```bash  ![Uploading arrow.png…]()
 
-   pip install pygame tweener
+   pip install pygame
+   pip install tweener
+   pip install pillow
    pip install git+https://github.com/robtandy/randomdict.git
    ```  
 
