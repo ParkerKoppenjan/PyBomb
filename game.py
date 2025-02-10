@@ -103,7 +103,7 @@ class GameState:
         self.tick_channel.stop()
         self.explosion_sound.play()
 
-        if not self.running and self.winner:
+        if self.winner:
             return MenuAction.TO_GAME_OVER
         return MenuAction.QUIT
 
